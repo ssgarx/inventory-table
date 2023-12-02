@@ -1,6 +1,7 @@
 import React, { useState } from "react" // React core imports
 import { inventoryData } from "../data/inventory" // Custom data imports
 import Image from "next/image" // Next.js Image component
+import Paginate from "../components/paginate"
 
 const pageSize = 5 // Constant for pagination size
 
@@ -64,10 +65,9 @@ const Index = () => {
         columnHeaders={columnHeaders}
         sortedData={sortedCurrentData}
         handleSort={handleSort}
-        currentPage={currentPage} // Pass currentPage as a prop to Table
       />
       {/* Pagination controls */}
-      <PaginationControls
+      <Paginate
         currentPage={currentPage}
         totalPages={totalPages}
         handlePageChange={handlePageChange}
@@ -77,7 +77,7 @@ const Index = () => {
 }
 
 // Table component for displaying inventory data
-const Table = ({ columnHeaders, sortedData, handleSort, currentPage }) => (
+const Table = ({ columnHeaders, sortedData, handleSort }) => (
   <table className="min-w-full">
     <thead className="bg-zinc-800">
       <tr>
@@ -93,9 +93,9 @@ const Table = ({ columnHeaders, sortedData, handleSort, currentPage }) => (
       </tr>
     </thead>
     <tbody>
-      {sortedData.map((item, index) => (
+      {sortedData.map((item) => (
         <ItemRow
-          key={`${item.id}-${currentPage}`} // Unique key based on item id and current page
+          key={item.id} // Unique key based on item id and current page
           item={item}
           columnHeaders={columnHeaders}
         />
@@ -105,31 +105,6 @@ const Table = ({ columnHeaders, sortedData, handleSort, currentPage }) => (
 )
 
 // PaginationControls component for navigating pages
-const PaginationControls = ({ currentPage, totalPages, handlePageChange }) => (
-  <div className="flex justify-between">
-    <button onClick={() => handlePageChange(1)} disabled={currentPage === 1}>
-      First Page
-    </button>
-    <button
-      onClick={() => handlePageChange(currentPage - 1)}
-      disabled={currentPage === 1}
-    >
-      Previous
-    </button>
-    <button
-      onClick={() => handlePageChange(currentPage + 1)}
-      disabled={currentPage >= totalPages}
-    >
-      Next
-    </button>
-    <button
-      onClick={() => handlePageChange(totalPages)}
-      disabled={currentPage >= totalPages}
-    >
-      Last Page
-    </button>
-  </div>
-)
 
 // ItemRow component for rendering each row of the table
 const ItemRow = ({ item, level = 0, columnHeaders }) => {
@@ -144,7 +119,22 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
             className="px-4 py-2 border-b"
             style={index === 0 ? { paddingLeft: `${level * 20}px` } : {}}
           >
-            {renderCellContent(item, header)}
+            {header === "image" && item[header] ? (
+              <Image
+                src={item[header]}
+                alt={item.title || "Item Image"}
+                width={50}
+                height={50}
+              />
+            ) : typeof item[header] === "boolean" ? (
+              item[header] ? (
+                "yes"
+              ) : (
+                "no"
+              )
+            ) : (
+              item[header]
+            )}
           </td>
         ))}
       </tr>
@@ -161,25 +151,6 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
         ))}
     </>
   )
-}
-
-// Helper function to render cell content based on item and header
-const renderCellContent = (item, header) => {
-  if (header === "image" && item[header]) {
-    return (
-      <Image
-        src={item[header]}
-        alt={item.title || "Item Image"}
-        width={50}
-        height={50}
-      />
-    )
-  }
-  return typeof item[header] === "boolean"
-    ? item[header]
-      ? "yes"
-      : "no"
-    : item[header]
 }
 
 // Component for rendering rows with secondary variants
