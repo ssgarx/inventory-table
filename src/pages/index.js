@@ -1,15 +1,15 @@
-import React, { useState } from "react" // React imports
-import { dummyData, inventoryData } from "../data/inventory" // Data imports
-import Image from "next/image"
+import React, { useState } from "react" // React core imports
+import { inventoryData } from "../data/inventory" // Custom data imports
+import Image from "next/image" // Next.js Image component
 
-// Constants
-const pageSize = 5
+const pageSize = 5 // Constant for pagination size
 
-// Main component that renders the table and handles pagination and sorting
+// Index: Main component for rendering table, handling pagination and sorting
 const Index = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" })
 
+  // Filter out unwanted columns from inventoryData
   const columnHeaders = Object.keys(inventoryData[0] || {}).filter(
     (key) =>
       ![
@@ -23,106 +23,115 @@ const Index = () => {
 
   const totalPages = Math.ceil(inventoryData.length / pageSize)
 
-  // Change page and reset sorting
+  // Handle page change and reset sorting
   const handlePageChange = (page) => {
     setCurrentPage(page)
     setSortConfig({ key: null, direction: "asc" })
   }
 
-  // Handle sorting logic
+  // Handle sorting by column
   const handleSort = (key) => {
     const direction =
       sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc"
     setSortConfig({ key, direction })
   }
 
-  // Sort data based on the current sort configuration
+  // Function to sort data based on configuration
   const sortedData = (currentData) => {
     if (!sortConfig.key) return currentData
-
     return [...currentData].sort((a, b) => {
-      const aValue = a[sortConfig.key]
-      const bValue = b[sortConfig.key]
-
-      if (typeof aValue === "string" && typeof bValue === "string") {
-        return sortConfig.direction === "asc"
-          ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(aValue)
-      }
-
-      return sortConfig.direction === "asc"
-        ? aValue < bValue
-          ? -1
-          : 1
-        : bValue < aValue
-        ? -1
-        : 1
+      const [aValue, bValue] = [a[sortConfig.key], b[sortConfig.key]]
+      const isStringCompare =
+        typeof aValue === "string" && typeof bValue === "string"
+      const compareResult = isStringCompare
+        ? aValue.localeCompare(bValue)
+        : aValue - bValue
+      return sortConfig.direction === "asc" ? compareResult : -compareResult
     })
   }
 
-  // Calculate current data slice for the table
+  // Calculate the current data slice for the table
   const startItem = (currentPage - 1) * pageSize
   const endItem = Math.min(currentPage * pageSize, inventoryData.length)
   const currentData = inventoryData.slice(startItem, endItem)
   const sortedCurrentData = sortedData(currentData)
 
+  // Main table rendering
   return (
     <div>
-      <table className="min-w-full">
-        <thead className="bg-zinc-800">
-          <tr>
-            {columnHeaders.map((header, index) => (
-              <th
-                key={index}
-                className="px-4 py-2"
-                onClick={() => handleSort(header)}
-              >
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sortedCurrentData.map((item, index) => (
-            <ItemRow
-              key={item.name}
-              item={item}
-              columnHeaders={columnHeaders}
-            />
-          ))}
-        </tbody>
-      </table>
-      <div className="flex justify-between">
-        {/* Pagination buttons */}
-        <button
-          onClick={() => handlePageChange(1)}
-          disabled={currentPage === 1}
-        >
-          First Page
-        </button>
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Previous
-        </button>
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage >= totalPages}
-        >
-          Next
-        </button>
-        <button
-          onClick={() => handlePageChange(totalPages)}
-          disabled={currentPage >= totalPages}
-        >
-          Last Page
-        </button>
-      </div>
+      {/* Table for inventory data */}
+      <Table
+        columnHeaders={columnHeaders}
+        sortedData={sortedCurrentData}
+        handleSort={handleSort}
+        currentPage={currentPage} // Pass currentPage as a prop to Table
+      />
+      {/* Pagination controls */}
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        handlePageChange={handlePageChange}
+      />
     </div>
   )
 }
 
+// Table component for displaying inventory data
+const Table = ({ columnHeaders, sortedData, handleSort, currentPage }) => (
+  <table className="min-w-full">
+    <thead className="bg-zinc-800">
+      <tr>
+        {columnHeaders.map((header, index) => (
+          <th
+            key={index}
+            className="px-4 py-2"
+            onClick={() => handleSort(header)}
+          >
+            {header}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {sortedData.map((item, index) => (
+        <ItemRow
+          key={`${item.id}-${currentPage}`} // Unique key based on item id and current page
+          item={item}
+          columnHeaders={columnHeaders}
+        />
+      ))}
+    </tbody>
+  </table>
+)
+
+// PaginationControls component for navigating pages
+const PaginationControls = ({ currentPage, totalPages, handlePageChange }) => (
+  <div className="flex justify-between">
+    <button onClick={() => handlePageChange(1)} disabled={currentPage === 1}>
+      First Page
+    </button>
+    <button
+      onClick={() => handlePageChange(currentPage - 1)}
+      disabled={currentPage === 1}
+    >
+      Previous
+    </button>
+    <button
+      onClick={() => handlePageChange(currentPage + 1)}
+      disabled={currentPage >= totalPages}
+    >
+      Next
+    </button>
+    <button
+      onClick={() => handlePageChange(totalPages)}
+      disabled={currentPage >= totalPages}
+    >
+      Last Page
+    </button>
+  </div>
+)
+
+// ItemRow component for rendering each row of the table
 const ItemRow = ({ item, level = 0, columnHeaders }) => {
   const [showPrimaryVariants, setShowPrimaryVariants] = useState(false)
 
@@ -135,25 +144,11 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
             className="px-4 py-2 border-b"
             style={index === 0 ? { paddingLeft: `${level * 20}px` } : {}}
           >
-            {header === "image" && item[header] ? (
-              <Image
-                src={item[header]}
-                alt={item.title || "Item Image"}
-                width={50}
-                height={50}
-              />
-            ) : typeof item[header] === "boolean" ? (
-              item[header] ? (
-                "yes"
-              ) : (
-                "no"
-              )
-            ) : (
-              item[header]
-            )}
+            {renderCellContent(item, header)}
           </td>
         ))}
       </tr>
+      {/* Conditionally rendered rows for primary variants */}
       {showPrimaryVariants &&
         item.primary_variants &&
         item.primary_variants.map((primaryVariant, index) => (
@@ -168,9 +163,28 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
   )
 }
 
+// Helper function to render cell content based on item and header
+const renderCellContent = (item, header) => {
+  if (header === "image" && item[header]) {
+    return (
+      <Image
+        src={item[header]}
+        alt={item.title || "Item Image"}
+        width={50}
+        height={50}
+      />
+    )
+  }
+  return typeof item[header] === "boolean"
+    ? item[header]
+      ? "yes"
+      : "no"
+    : item[header]
+}
+
+// Component for rendering rows with secondary variants
 const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
   const [showSecondaryVariants, setShowSecondaryVariants] = useState(false)
-
   const adjustedItem = { ...item, title: item.name }
 
   return (
@@ -186,6 +200,7 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
           </td>
         ))}
       </tr>
+      {/* Conditionally rendered rows for secondary variants */}
       {showSecondaryVariants &&
         item.secondary_variants &&
         item.secondary_variants.map((secondaryVariant, index) => (
