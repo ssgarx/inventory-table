@@ -1,5 +1,6 @@
 import React, { useState } from "react" // React imports
-import { dummyData } from "../data/inventory" // Data imports
+import { dummyData, inventoryData } from "../data/inventory" // Data imports
+import Image from "next/image"
 
 // Constants
 const pageSize = 5
@@ -9,12 +10,18 @@ const Index = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" })
 
-  // Filter out unwanted keys from column headers
-  const columnHeaders = Object.keys(dummyData[0] || {}).filter(
-    (key) => key !== "variants" && key !== "id"
+  const columnHeaders = Object.keys(inventoryData[0] || {}).filter(
+    (key) =>
+      ![
+        "primary_variants",
+        "secondary_variants",
+        "id",
+        "primary_variant_name",
+        "secondary_variant_name",
+      ].includes(key)
   )
 
-  const totalPages = Math.ceil(dummyData.length / pageSize)
+  const totalPages = Math.ceil(inventoryData.length / pageSize)
 
   // Change page and reset sorting
   const handlePageChange = (page) => {
@@ -55,8 +62,8 @@ const Index = () => {
 
   // Calculate current data slice for the table
   const startItem = (currentPage - 1) * pageSize
-  const endItem = Math.min(currentPage * pageSize, dummyData.length)
-  const currentData = dummyData.slice(startItem, endItem)
+  const endItem = Math.min(currentPage * pageSize, inventoryData.length)
+  const currentData = inventoryData.slice(startItem, endItem)
   const sortedCurrentData = sortedData(currentData)
 
   return (
@@ -117,28 +124,74 @@ const Index = () => {
 }
 
 const ItemRow = ({ item, level = 0, columnHeaders }) => {
-  // Renders a single item row, with an option to show its variants
-  const [showVariants, setShowVariants] = useState(false)
+  const [showPrimaryVariants, setShowPrimaryVariants] = useState(false)
 
   return (
     <>
-      <tr onClick={() => setShowVariants(!showVariants)}>
+      <tr onClick={() => setShowPrimaryVariants(!showPrimaryVariants)}>
         {columnHeaders.map((header, index) => (
           <td
             key={header}
             className="px-4 py-2 border-b"
             style={index === 0 ? { paddingLeft: `${level * 20}px` } : {}}
           >
-            {item[header]}
+            {header === "image" && item[header] ? (
+              <Image
+                src={item[header]}
+                alt={item.title || "Item Image"}
+                width={50}
+                height={50}
+              />
+            ) : typeof item[header] === "boolean" ? (
+              item[header] ? (
+                "yes"
+              ) : (
+                "no"
+              )
+            ) : (
+              item[header]
+            )}
           </td>
         ))}
       </tr>
-      {showVariants &&
-        item.variants &&
-        item.variants.map((variant, index) => (
+      {showPrimaryVariants &&
+        item.primary_variants &&
+        item.primary_variants.map((primaryVariant, index) => (
+          <ItemRowWithSecondary
+            key={index}
+            item={primaryVariant}
+            level={level + 1}
+            columnHeaders={columnHeaders}
+          />
+        ))}
+    </>
+  )
+}
+
+const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
+  const [showSecondaryVariants, setShowSecondaryVariants] = useState(false)
+
+  const adjustedItem = { ...item, title: item.name }
+
+  return (
+    <>
+      <tr onClick={() => setShowSecondaryVariants(!showSecondaryVariants)}>
+        {columnHeaders.map((header, index) => (
+          <td
+            key={header}
+            className="px-4 py-2 border-b"
+            style={index === 0 ? { paddingLeft: `${level * 20}px` } : {}}
+          >
+            {adjustedItem[header]}
+          </td>
+        ))}
+      </tr>
+      {showSecondaryVariants &&
+        item.secondary_variants &&
+        item.secondary_variants.map((secondaryVariant, index) => (
           <ItemRow
             key={index}
-            item={variant}
+            item={{ ...secondaryVariant, title: secondaryVariant.name }}
             level={level + 1}
             columnHeaders={columnHeaders}
           />
