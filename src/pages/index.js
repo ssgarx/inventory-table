@@ -2,8 +2,24 @@ import React, { useState } from "react" // React core imports
 import { inventoryData } from "../data/inventory" // Custom data imports
 import Image from "next/image" // Next.js Image component
 import Paginate from "../components/paginate"
+import { Tooltip } from "react-tooltip"
 
-const pageSize = 5 // Constant for pagination size
+const pageSize = 10 // Constant for pagination size
+
+// Function to map indentation level to Tailwind padding class
+const getPaddingClass = (level) => {
+  switch (level) {
+    case 0:
+      return "pl-0"
+    case 1:
+      return "pl-10"
+    case 2:
+      return "pl-20"
+    // Add more cases as needed
+    default:
+      return "pl-0"
+  }
+}
 
 // Index: Main component for rendering table, handling pagination and sorting
 const Index = () => {
@@ -19,6 +35,8 @@ const Index = () => {
         "id",
         "primary_variant_name",
         "secondary_variant_name",
+        "description",
+        "active",
       ].includes(key)
   )
 
@@ -67,11 +85,13 @@ const Index = () => {
         handleSort={handleSort}
       />
       {/* Pagination controls */}
-      <Paginate
-        currentPage={currentPage}
-        totalPages={totalPages}
-        handlePageChange={handlePageChange}
-      />
+      {pageSize < totalPages && (
+        <Paginate
+          currentPage={currentPage}
+          totalPages={totalPages}
+          handlePageChange={handlePageChange}
+        />
+      )}
     </div>
   )
 }
@@ -79,7 +99,7 @@ const Index = () => {
 // Table component for displaying inventory data
 const Table = ({ columnHeaders, sortedData, handleSort }) => (
   <table className="min-w-full">
-    <thead className="bg-zinc-800">
+    <thead className="bg-zinc-800 text-left">
       <tr>
         {columnHeaders.map((header, index) => (
           <th
@@ -116,22 +136,38 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
         {columnHeaders.map((header, index) => (
           <td
             key={header}
-            className="px-4 py-2 border-b"
-            style={index === 0 ? { paddingLeft: `${level * 20}px` } : {}}
+            className={`p-4 py-2 border-b ${
+              index === 0 ? getPaddingClass(level) : ""
+            } ${
+              header === "active"
+                ? item[header]
+                  ? " opacity-100"
+                  : " opacity-50"
+                : ""
+            }`}
           >
-            {header === "image" && item[header] ? (
+            {header === "title" ? (
+              <>
+                {item[header]}
+                {item.description && (
+                  <>
+                    <a
+                      data-tooltip-id="my-tooltip"
+                      data-tooltip-content={item.description}
+                    >
+                      TT
+                    </a>
+                    <Tooltip place="bottom" style={{ maxWidth: "15rem" }} id="my-tooltip" />
+                  </>
+                )}
+              </>
+            ) : header === "image" && item[header] ? (
               <Image
                 src={item[header]}
                 alt={item.title || "Item Image"}
                 width={50}
                 height={50}
               />
-            ) : typeof item[header] === "boolean" ? (
-              item[header] ? (
-                "yes"
-              ) : (
-                "no"
-              )
             ) : (
               item[header]
             )}
@@ -164,8 +200,9 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
         {columnHeaders.map((header, index) => (
           <td
             key={header}
-            className="px-4 py-2 border-b"
-            style={index === 0 ? { paddingLeft: `${level * 20}px` } : {}}
+            className={`px-4 py-2 border-b ${
+              index === 0 ? getPaddingClass(level) : ""
+            }`}
           >
             {adjustedItem[header]}
           </td>
