@@ -36,16 +36,15 @@ export default function Index() {
     setSortConfig({ key, direction })
   }
 
-  const handleEditSave = (editedItem) => {
+  const handleEditSave = (editedRowData) => {
     // Update the data with the edited item
     const updatedData = data.map((item) =>
-      item.id === editedItem.id ? editedItem : item
+      item.id === editedRowData.id ? editedRowData : item
     )
 
     // Update state and session storage
     setData(updatedData)
     sessionStorage.setItem("editedData", JSON.stringify(updatedData))
-
   }
 
   // Update references to inventoryData with data
@@ -123,7 +122,7 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
           >
             {header === "title" ? (
               <>
-                <InfoDisplay
+                <CellContent
                   content={item[header]}
                   handleEditSave={handleEditSave}
                   dataItem={item}
@@ -136,7 +135,7 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
                 )}
               </>
             ) : header === "image" && item[header] ? (
-              <InfoDisplay
+              <CellContent
                 content={item[header]}
                 isImage
                 handleEditSave={handleEditSave}
@@ -144,7 +143,7 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
                 dataItemKey={header}
               />
             ) : (
-              <InfoDisplay
+              <CellContent
                 content={item[header]}
                 handleEditSave={handleEditSave}
                 dataItem={item}
@@ -182,19 +181,19 @@ const ItemRowWithSecondary = ({
   const [showSecondaryVariants, setShowSecondaryVariants] = useState(false)
   const adjustedItem = { ...item, title: item.name }
 
-  const handlePrimaryVarientEdit = (editedItem) => {
+  const handlePrimaryVariantEdit = (editedRowData) => {
     const editedData = { ...dataItem }
     editedData.primary_variants[dataItemKey] = {
-      ...editedItem,
-      name: editedItem.title,
+      ...editedRowData,
+      name: editedRowData.title,
     }
     handleEditSave(editedData)
   }
-  const handleSecondaryVarientEdit = (x, index) => {
+  const handleSecondaryVariantEdit = (editedRowData, orderIndex) => {
     const editedData = { ...dataItem }
-    editedData.primary_variants[dataItemKey].secondary_variants[index] = {
-      ...x,
-      name: x.title,
+    editedData.primary_variants[dataItemKey].secondary_variants[orderIndex] = {
+      ...editedRowData,
+      name: editedRowData.title,
     }
     handleEditSave(editedData)
   }
@@ -209,11 +208,11 @@ const ItemRowWithSecondary = ({
               index === 0 ? getPaddingClass(level) : ""
             }`}
           >
-            <InfoDisplay
+            <CellContent
               content={adjustedItem[header]}
               dataItem={adjustedItem}
               dataItemKey={header}
-              handleEditSave={handlePrimaryVarientEdit}
+              handleEditSave={handlePrimaryVariantEdit}
             />
           </td>
         ))}
@@ -229,7 +228,7 @@ const ItemRowWithSecondary = ({
             dataItem={item}
             dataItemKey={index}
             handleEditSave={(editedObj) =>
-              handleSecondaryVarientEdit(editedObj, index)
+              handleSecondaryVariantEdit(editedObj, index)
             }
           />
         ))}
@@ -237,8 +236,7 @@ const ItemRowWithSecondary = ({
   )
 }
 
-// InfoDisplay Component
-const InfoDisplay = ({
+const CellContent = ({
   content,
   isImage,
   handleEditSave,
