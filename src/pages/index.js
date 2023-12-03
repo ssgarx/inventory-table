@@ -8,7 +8,6 @@ import ThemeSwitch from "../components/features/themeSwitch"
 // Utilities and Styles
 import {
   filterColumnHeaders,
-  getPaddingClass,
   isNullOrEmpty,
   joinClassNames,
   sortData,
@@ -16,8 +15,9 @@ import {
 import Image from "next/image"
 import { fetchInventoryData } from "../network.js"
 import Svg from "../components/svg"
+import TableSkeleton from "../components/skeletons/tableSkeleton"
 
-const pageSize = 10
+const pageSize = 5
 
 export default function Index() {
   // State management
@@ -36,7 +36,6 @@ export default function Index() {
 
       try {
         const fetchedData = await fetchInventoryData()
-        console.log("fetchedData", fetchedData)
         const newData = fetchedData || []
         setData(newData)
         if (!isNullOrEmpty(newData)) {
@@ -74,8 +73,9 @@ export default function Index() {
   }
 
   // Render loading or no data scenarios
-  if (!data) return <div>Loading...</div>
-  if (isNullOrEmpty(data)) return <div>No data</div>
+  if (!data) return <TableSkeleton />  
+  
+  if (isNullOrEmpty(data)) return <div className="w-screen h-screen flex justify-center items-center"><div>No data, go take a walk.</div></div>
 
   // Data processing for table display
   const columnHeaders = filterColumnHeaders(data)
@@ -87,7 +87,7 @@ export default function Index() {
 
   // Rendering main component
   return (
-    <div className="m-8 border p-4 rounded-md space-y-8">
+    <div className="m-8 border p-4 rounded-md space-y-16">
       <div className="flex justify-between items-center">
         <div>
           <p className="text-3xl font-semibold text-primary">
@@ -121,7 +121,7 @@ const Table = ({
   handleEditSave,
   sortConfig,
 }) => (
-  <table className="min-w-full">
+  <table className="min-w-full animate-loadFadeUp">
     <thead className="bg-muted text-left ">
       <tr>
         {columnHeaders.map((header, index) => {
@@ -136,7 +136,7 @@ const Table = ({
             <th
               key={index}
               className={joinClassNames(
-                index === 0 ? "pl-[20px]" : "",
+                index === 0 ? "pl-[32px]" : "px-4",
                 " py-2 text-primary capitalize font-medium cursor-pointer"
               )}
               onClick={() => handleSort(header)}
@@ -174,18 +174,18 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
 
   return (
     <>
-      <tr onClick={() => setShowPrimaryVariants(!showPrimaryVariants)}>
+      <tr className="cursor-pointer" onClick={() => setShowPrimaryVariants(!showPrimaryVariants)}>
         {columnHeaders.map((header, index) => (
           <td
             key={header}
             style={
               index === 0
                 ? {
-                    paddingLeft: (level + 1) * 20,
+                    paddingLeft: (level + 1) * 32,
                   }
                 : null
             }
-            className={`pr-4 py-2 border-b ${
+            className={`px-4 py-2 border-b ${
               header === "active"
                 ? item[header]
                   ? " opacity-100"
@@ -194,7 +194,7 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
             }`}
           >
             {header === "title" ? (
-              <div className="flex justify-start items-center gap-2 ">
+              <div className="flex justify-start items-center gap-2 w-full ">
                 <CellContent
                   content={item[header]}
                   handleEditSave={handleEditSave}
@@ -212,6 +212,28 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
                   </HeadlessTooltip>
                 )}
               </div>
+            ) : header === "price" ? (
+              <CellContent
+                content={`$${item[header]}`}
+                handleEditSave={handleEditSave}
+                dataItem={item}
+                dataItemKey={header}
+              />
+            ) : header === "category" ? (
+              <CellContent
+                content={item[header]}
+                handleEditSave={handleEditSave}
+                dataItem={item}
+                dataItemKey={header}
+                isCategory
+              />
+            ) : header === "discountPercentage" ? (
+              <CellContent
+                content={`${item[header]}%`}
+                handleEditSave={handleEditSave}
+                dataItem={item}
+                dataItemKey={header}
+              />
             ) : header === "image" && item[header] ? (
               <CellContent
                 content={item[header]}
@@ -278,15 +300,15 @@ const ItemRowWithSecondary = ({
 
   return (
     <>
-      <tr onClick={() => setShowSecondaryVariants(!showSecondaryVariants)}>
+      <tr className="cursor-pointer"  onClick={() => setShowSecondaryVariants(!showSecondaryVariants)}>
         {columnHeaders.map((header, index) => (
           <td
             key={header}
-            className={`pr-4 py-2 border-b `}
+            className={`px-4 py-2 border-b `}
             style={
               index === 0
                 ? {
-                    paddingLeft: (level + 1) * 20,
+                    paddingLeft: (level + 1) * 32,
                   }
                 : null
             }
@@ -325,7 +347,7 @@ const CellContent = ({
   handleEditSave,
   dataItem,
   dataItemKey,
-  type,
+  isCategory,
 }) => {
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState(content)
@@ -344,25 +366,28 @@ const CellContent = ({
   }
 
   return (
-    <div className="relative group text-primary">
+    <div className="relative group text-primary w-full">
       {!isEditing && (
         <span
-          className="absolute -top-0 -left-4 cursor-pointer hidden group-hover:block  "
+          className="absolute top-1 -left-4 cursor-pointer hidden group-hover:block  "
           onClick={handleEditClick}
         >
           <Svg className={"w-4"} name="pencil" />
         </span>
       )}
       {isEditing ? (
-        <div>
+        <div className="w-full flex space-x-2">
           <input
             type={typeof inputValue === "string" ? "text" : "number"}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            className="bg-zinc-600 px-2 py-1"
+            className=" rounded-md bg-zinc-500 px-2 py-1 w-full"
           />
-          <button className="bg-zinc-400" onClick={handleSaveClick}>
-            Save
+          <button
+            className="bg-accent flex justify-center items-center px-4 py-0 rounded-md uppercase hover:opacity-95 active:opacity-100"
+            onClick={handleSaveClick}
+          >
+            save
           </button>
         </div>
       ) : isImage ? (
@@ -373,6 +398,10 @@ const CellContent = ({
           width={50}
           height={50}
         />
+      ) : isCategory && content ? (
+        <div className="bg-muted text-muted-foreground  px-2 pt-1 pb-2 rounded-md text-center flex justify-center items-center lowercase italic leading-none text-sm">
+          <div>{content}</div>
+        </div>
       ) : (
         <div className="">{content}</div>
       )}

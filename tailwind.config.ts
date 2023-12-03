@@ -15,7 +15,6 @@ const config: Config = {
       },
       colors: {
         border: "var(--border)",
-        input: "var(--input)",
         background: "var(--background)",
         foreground: "var(--foreground)",
         primary: {

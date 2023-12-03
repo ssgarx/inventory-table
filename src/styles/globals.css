@@ -22,11 +22,10 @@
     --secondary: theme(colors.zinc.600);
     --secondary-foreground: theme(colors.zinc.200);
 
-    --accent: theme(colors.blue.600);
+    --accent: theme(colors.blue.700);
     --accent-foreground: theme(colors.zinc.100);
 
     --border: theme(colors.zinc.200);
-    --input: theme(colors.zinc.200);
   }
   .dark {
     --background: theme(colors.zinc.950);
@@ -41,12 +40,29 @@
     --secondary: theme(colors.zinc.500);
     --secondary-foreground: theme(colors.zinc.900);
 
-    --accent: theme(colors.blue.600);
+    --accent: theme(colors.blue.700);
     --accent-foreground: theme(colors.zinc.100);
 
     --border: theme(colors.zinc.800);
-    --input: theme(colors.zinc.800);
 
     --radius: 0.5rem;
   }
 }
+/* scrollbar start */
+*::-webkit-scrollbar {
+  @apply w-2 h-2 /*height 1 for horizontal scroll */;
+}
+*::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+*::-webkit-scrollbar-thumb {
+  @apply bg-muted backdrop-blur backdrop-filter rounded-lg bg-clip-padding;
+}
+*::-webkit-scrollbar-thumb:hover {
+  @apply bg-zinc-300  bg-opacity-75 backdrop-blur backdrop-filter;
+}
+::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0);
+}
+
+/* scrollbar end */
