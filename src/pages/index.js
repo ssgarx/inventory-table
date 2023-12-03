@@ -2,44 +2,17 @@ import React, { useState } from "react" // React core imports
 import { inventoryData } from "../data/inventory" // Custom data imports
 import Image from "next/image" // Next.js Image component
 import Paginate from "../components/paginate"
-import { Tooltip } from "react-tooltip"
+import { filterColumnHeaders, getPaddingClass, sortData } from "../utils"
+import HeadlessTooltip from "../components/headlessTooltip"
 
 const pageSize = 10 // Constant for pagination size
-
-// Function to map indentation level to Tailwind padding class
-const getPaddingClass = (level) => {
-  switch (level) {
-    case 0:
-      return "pl-0"
-    case 1:
-      return "pl-10"
-    case 2:
-      return "pl-20"
-    // Add more cases as needed
-    default:
-      return "pl-0"
-  }
-}
 
 // Index: Main component for rendering table, handling pagination and sorting
 const Index = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" })
 
-  // Filter out unwanted columns from inventoryData
-  const columnHeaders = Object.keys(inventoryData[0] || {}).filter(
-    (key) =>
-      ![
-        "primary_variants",
-        "secondary_variants",
-        "id",
-        "primary_variant_name",
-        "secondary_variant_name",
-        "description",
-        "active",
-      ].includes(key)
-  )
-
+  const columnHeaders = filterColumnHeaders(inventoryData)
   const totalPages = Math.ceil(inventoryData.length / pageSize)
 
   // Handle page change and reset sorting
@@ -55,25 +28,11 @@ const Index = () => {
     setSortConfig({ key, direction })
   }
 
-  // Function to sort data based on configuration
-  const sortedData = (currentData) => {
-    if (!sortConfig.key) return currentData
-    return [...currentData].sort((a, b) => {
-      const [aValue, bValue] = [a[sortConfig.key], b[sortConfig.key]]
-      const isStringCompare =
-        typeof aValue === "string" && typeof bValue === "string"
-      const compareResult = isStringCompare
-        ? aValue.localeCompare(bValue)
-        : aValue - bValue
-      return sortConfig.direction === "asc" ? compareResult : -compareResult
-    })
-  }
-
   // Calculate the current data slice for the table
   const startItem = (currentPage - 1) * pageSize
   const endItem = Math.min(currentPage * pageSize, inventoryData.length)
   const currentData = inventoryData.slice(startItem, endItem)
-  const sortedCurrentData = sortedData(currentData)
+  const sortedCurrentData = sortData(currentData, sortConfig)
 
   // Main table rendering
   return (
@@ -124,8 +83,6 @@ const Table = ({ columnHeaders, sortedData, handleSort }) => (
   </table>
 )
 
-// PaginationControls component for navigating pages
-
 // ItemRow component for rendering each row of the table
 const ItemRow = ({ item, level = 0, columnHeaders }) => {
   const [showPrimaryVariants, setShowPrimaryVariants] = useState(false)
@@ -150,15 +107,9 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
               <>
                 {item[header]}
                 {item.description && (
-                  <>
-                    <a
-                      data-tooltip-id="my-tooltip"
-                      data-tooltip-content={item.description}
-                    >
-                      TT
-                    </a>
-                    <Tooltip place="bottom" style={{ maxWidth: "15rem" }} id="my-tooltip" />
-                  </>
+                  <HeadlessTooltip content={item.description} id="my-tooltip">
+                    <a>TT</a>
+                  </HeadlessTooltip>
                 )}
               </>
             ) : header === "image" && item[header] ? (
