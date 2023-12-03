@@ -2,14 +2,14 @@ export // Function to map indentation level to Tailwind padding class
 const getPaddingClass = (level) => {
   switch (level) {
     case 0:
-      return "pl-0"
+      return "pl-5"
     case 1:
       return "pl-10"
     case 2:
       return "pl-20"
     // Add more cases as needed
     default:
-      return "pl-0"
+      return "pl-5"
   }
 }
 // Function to filter out unwanted columns

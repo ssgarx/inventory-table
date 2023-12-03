@@ -77,6 +77,8 @@ const Table = ({ columnHeaders, sortedData, handleSort }) => (
 )
 
 const ItemRow = ({ item, level = 0, columnHeaders }) => {
+  console.log('item', item)
+  console.log('columnHeaders', columnHeaders)
   const [showPrimaryVariants, setShowPrimaryVariants] = useState(false)
 
   return (
@@ -97,7 +99,7 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
           >
             {header === "title" ? (
               <>
-                {item[header]}
+                <InfoDisplay content={item[header]} />
                 {item.description && (
                   <HeadlessTooltip content={item.description} id="my-tooltip">
                     <a>TT</a>
@@ -105,14 +107,9 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
                 )}
               </>
             ) : header === "image" && item[header] ? (
-              <Image
-                src={item[header]}
-                alt={item.title || "Item Image"}
-                width={50}
-                height={50}
-              />
+              <InfoDisplay content={item[header]} isImage />
             ) : (
-              item[header]
+              <InfoDisplay content={item[header]} />
             )}
           </td>
         ))}
@@ -145,7 +142,7 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
               index === 0 ? getPaddingClass(level) : ""
             }`}
           >
-            {adjustedItem[header]}
+            <InfoDisplay content={adjustedItem[header]} />
           </td>
         ))}
       </tr>
@@ -160,5 +157,57 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
           />
         ))}
     </>
+  )
+}
+
+// InfoDisplay Component
+const InfoDisplay = ({ content, isImage }) => {
+  const [isEditing, setIsEditing] = useState(false)
+  const [inputValue, setInputValue] = useState(content)
+
+  const handleEditClick = () => {
+    setIsEditing(true)
+  }
+
+  const handleSaveClick = () => {
+    // Handle the save logic here
+    // For now, it just turns off the editing mode
+    setIsEditing(false)
+  }
+
+  return (
+    <div className="relative group">
+      {!isEditing && (
+        <span
+          className="absolute -top-0 -left-2 cursor-pointer hidden group-hover:block"
+          onClick={handleEditClick}
+        >
+          e
+        </span>
+      )}
+      {isEditing ? (
+        <div>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            className="bg-zinc-600 px-2 py-1"
+          />
+          <button className="bg-zinc-400" onClick={handleSaveClick}>
+            Save
+          </button>
+        </div>
+      ) : isImage ? (
+        <Image
+          className=""
+          src={content}
+          alt="Item Image"
+          width={50}
+          height={50}
+        />
+      ) : (
+        <div className="">{content}</div>
+      )}
+    </div>
   )
 }
