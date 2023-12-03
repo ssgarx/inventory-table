@@ -1,11 +1,14 @@
 // React and State Management
 import React, { useState, useEffect } from "react"
 
-// Custom Components and Data
+// Custom Components
 import Paginate from "../components/paginate"
 import HeadlessTooltip from "../components/headlessTooltip"
 import ThemeSwitch from "../components/features/themeSwitch"
-// Utilities and Styles
+import TableSkeleton from "../components/skeletons/tableSkeleton"
+import Svg from "../components/svg"
+
+// Utilities
 import {
   filterColumnHeaders,
   isNullOrEmpty,
@@ -14,8 +17,6 @@ import {
 } from "../utils"
 import Image from "next/image"
 import { fetchInventoryData } from "../network.js"
-import Svg from "../components/svg"
-import TableSkeleton from "../components/skeletons/tableSkeleton"
 
 const pageSize = 5
 
@@ -73,9 +74,13 @@ export default function Index() {
   }
 
   // Render loading or no data scenarios
-  if (!data) return <TableSkeleton />  
-  
-  if (isNullOrEmpty(data)) return <div className="w-screen h-screen flex justify-center items-center"><div>No data, go take a walk.</div></div>
+  if (!data) return <TableSkeleton />
+  if (isNullOrEmpty(data))
+    return (
+      <div className="w-screen h-screen flex justify-center items-center">
+        <div>No data, go take a walk.</div>
+      </div>
+    )
 
   // Data processing for table display
   const columnHeaders = filterColumnHeaders(data)
@@ -157,7 +162,7 @@ const Table = ({
       </tr>
     </thead>
     <tbody>
-      {sortedData.map((item) => (
+      {sortedData?.map((item) => (
         <ItemRow
           key={item.id}
           item={item}
@@ -172,90 +177,90 @@ const Table = ({
 const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
   const [showPrimaryVariants, setShowPrimaryVariants] = useState(false)
 
+  // Common properties for CellContent
+  const commonProps = (header) => ({
+    handleEditSave,
+    dataItem: item,
+    dataItemKey: header,
+  })
+
+  // Function to render cell content based on header type
+  const renderCellContent = (header, item) => {
+    switch (header) {
+      case "title":
+        return (
+          <div className="flex justify-start items-center gap-2 w-full ">
+            <CellContent
+              content={item[header]}
+              handleEditSave={handleEditSave}
+              dataItem={item}
+              dataItemKey={header}
+            />
+            {item.description && (
+              <HeadlessTooltip content={item.description} id="my-tooltip">
+                <a>
+                  <Svg
+                    className="w-4 mt-1 text-secondary cursor-help"
+                    name="info"
+                  />
+                </a>
+              </HeadlessTooltip>
+            )}
+          </div>
+        )
+      case "price":
+        return (
+          <CellContent content={`$${item[header]}`} {...commonProps(header)} />
+        )
+      case "category":
+        return (
+          <CellContent
+            content={item[header]}
+            isCategory
+            {...commonProps(header)}
+          />
+        )
+      case "discountPercentage":
+        return (
+          <CellContent content={`${item[header]}%`} {...commonProps(header)} />
+        )
+      case "image":
+        return item[header] ? (
+          <CellContent
+            content={item[header]}
+            isImage
+            {...commonProps(header)}
+          />
+        ) : null
+      default:
+        return <CellContent content={item[header]} {...commonProps(header)} />
+    }
+  }
+
   return (
     <>
-      <tr className="cursor-pointer" onClick={() => setShowPrimaryVariants(!showPrimaryVariants)}>
+      <tr
+        className="cursor-pointer"
+        onClick={() => setShowPrimaryVariants(!showPrimaryVariants)}
+      >
         {columnHeaders.map((header, index) => (
           <td
             key={header}
-            style={
-              index === 0
-                ? {
-                    paddingLeft: (level + 1) * 32,
-                  }
-                : null
-            }
+            style={index === 0 ? { paddingLeft: (level + 1) * 32 } : null}
             className={`px-4 py-2 border-b ${
               header === "active"
                 ? item[header]
-                  ? " opacity-100"
-                  : " opacity-50"
+                  ? "opacity-100"
+                  : "opacity-50"
                 : ""
             }`}
           >
-            {header === "title" ? (
-              <div className="flex justify-start items-center gap-2 w-full ">
-                <CellContent
-                  content={item[header]}
-                  handleEditSave={handleEditSave}
-                  dataItem={item}
-                  dataItemKey={header}
-                />
-                {item.description && (
-                  <HeadlessTooltip content={item.description} id="my-tooltip">
-                    <a>
-                      <Svg
-                        className={"w-4 mt-1 text-secondary cursor-help"}
-                        name="info"
-                      />
-                    </a>
-                  </HeadlessTooltip>
-                )}
-              </div>
-            ) : header === "price" ? (
-              <CellContent
-                content={`$${item[header]}`}
-                handleEditSave={handleEditSave}
-                dataItem={item}
-                dataItemKey={header}
-              />
-            ) : header === "category" ? (
-              <CellContent
-                content={item[header]}
-                handleEditSave={handleEditSave}
-                dataItem={item}
-                dataItemKey={header}
-                isCategory
-              />
-            ) : header === "discountPercentage" ? (
-              <CellContent
-                content={`${item[header]}%`}
-                handleEditSave={handleEditSave}
-                dataItem={item}
-                dataItemKey={header}
-              />
-            ) : header === "image" && item[header] ? (
-              <CellContent
-                content={item[header]}
-                isImage
-                handleEditSave={handleEditSave}
-                dataItem={item}
-                dataItemKey={header}
-              />
-            ) : (
-              <CellContent
-                content={item[header]}
-                handleEditSave={handleEditSave}
-                dataItem={item}
-                dataItemKey={header}
-              />
-            )}
+            {renderCellContent(header, item)}
           </td>
         ))}
       </tr>
       {showPrimaryVariants &&
-        item.primary_variants &&
-        item.primary_variants.map((primaryVariant, index) => (
+        item?.primary_variants?.map((primaryVariant, index) => (
           <ItemRowWithSecondary
             key={index}
             item={primaryVariant}
@@ -281,6 +286,7 @@ const ItemRowWithSecondary = ({
   const [showSecondaryVariants, setShowSecondaryVariants] = useState(false)
   const adjustedItem = { ...item, title: item.name }
 
+  //Editor functions
   const handlePrimaryVariantEdit = (editedRowData) => {
     const editedData = { ...dataItem }
     editedData.primary_variants[dataItemKey] = {
@@ -289,6 +295,7 @@ const ItemRowWithSecondary = ({
     }
     handleEditSave(editedData)
   }
+
   const handleSecondaryVariantEdit = (editedRowData, orderIndex) => {
     const editedData = { ...dataItem }
     editedData.primary_variants[dataItemKey].secondary_variants[orderIndex] = {
@@ -300,7 +307,10 @@ const ItemRowWithSecondary = ({
 
   return (
     <>
-      <tr className="cursor-pointer"  onClick={() => setShowSecondaryVariants(!showSecondaryVariants)}>
+      <tr
+        className="cursor-pointer"
+        onClick={() => setShowSecondaryVariants(!showSecondaryVariants)}
+      >
         {columnHeaders.map((header, index) => (
           <td
             key={header}
@@ -323,8 +333,7 @@ const ItemRowWithSecondary = ({
         ))}
       </tr>
       {showSecondaryVariants &&
-        item.secondary_variants &&
-        item.secondary_variants.map((secondaryVariant, index) => (
+        item?.secondary_variants?.map((secondaryVariant, index) => (
           <ItemRow
             key={index}
             item={{ ...secondaryVariant, title: secondaryVariant.name }}
@@ -352,10 +361,12 @@ const CellContent = ({
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState(content)
 
+  //Editor function
   const handleEditClick = () => {
     setIsEditing(true)
   }
 
+  //Save function
   const handleSaveClick = () => {
     // Handle the save logic here
     // For now, it just turns off the editing mode
