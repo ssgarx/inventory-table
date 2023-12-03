@@ -14,6 +14,7 @@ const getPaddingClass = (level) => {
 }
 // Function to filter out unwanted columns
 export const filterColumnHeaders = (data) => {
+  if (!data) return
   return Object.keys(data[0] || {}).filter(
     (key) =>
       ![
@@ -40,4 +41,19 @@ export const sortData = (data, sortConfig) => {
       : aValue - bValue
     return sortConfig.direction === "asc" ? compareResult : -compareResult
   })
+}
+
+export function isNullOrEmpty(testObject) {
+  if (!testObject) return true
+  if (testObject instanceof Array) {
+    return testObject.length == 0
+  }
+  return Object.keys(testObject).length == 0
+}
+
+export function isEmpty(obj) {
+  if (Array.isArray(obj)) {
+    return obj.length == 0
+  }
+  return obj !== null && typeof obj === "object" && Object.keys(obj).length == 0
 }

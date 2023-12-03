@@ -7,53 +7,84 @@ import HeadlessTooltip from "../components/headlessTooltip"
 import { inventoryData } from "../data/inventory"
 
 // Utilities and Styles
-import { filterColumnHeaders, getPaddingClass, sortData } from "../utils"
+import {
+  filterColumnHeaders,
+  getPaddingClass,
+  isNullOrEmpty,
+  sortData,
+} from "../utils"
 import Image from "next/image"
+import { fetchInventoryData } from "../network.js"
 
 const pageSize = 10
 
 export default function Index() {
-  const [data, setData] = useState([])
-
+  // State management
+  const [data, setData] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" })
 
+  // Fetch and update data
   useEffect(() => {
-    // Load data from session storage or use default data
-    const initialData =
-      JSON.parse(sessionStorage.getItem("editedData")) || inventoryData
-    setData(initialData)
+    const fetchData = async () => {
+      const initialData = JSON.parse(sessionStorage.getItem("editedData"))
+      if (initialData) {
+        setData(initialData)
+        return
+      }
+
+      try {
+        const fetchedData = await fetchInventoryData()
+        console.log("fetchedData", fetchedData)
+        const newData = fetchedData || []
+        setData(newData)
+        if (!isNullOrEmpty(newData)) {
+          sessionStorage.setItem("editedData", JSON.stringify(newData))
+        }
+      } catch (error) {
+        console.error("Failed to fetch inventory data:", error)
+        setData([])
+      }
+    }
+
+    fetchData()
   }, [])
 
+  // Handle page change
   const handlePageChange = (page) => {
     setCurrentPage(page)
     setSortConfig({ key: null, direction: "asc" })
   }
 
+  // Handle sorting
   const handleSort = (key) => {
-    const direction =
+    const newDirection =
       sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc"
-    setSortConfig({ key, direction })
+    setSortConfig({ key, direction: newDirection })
   }
 
+  // Handle edit and save
   const handleEditSave = (editedRowData) => {
-    // Update the data with the edited item
     const updatedData = data.map((item) =>
       item.id === editedRowData.id ? editedRowData : item
     )
-
-    // Update state and session storage
     setData(updatedData)
     sessionStorage.setItem("editedData", JSON.stringify(updatedData))
   }
 
-  // Update references to inventoryData with data
+  // Render loading or no data scenarios
+  if (!data) return <div>Loading...</div>
+  if (isNullOrEmpty(data)) return <div>No data</div>
+
+  // Data processing for table display
   const columnHeaders = filterColumnHeaders(data)
   const totalPages = Math.ceil(data.length / pageSize)
   const startItem = (currentPage - 1) * pageSize
   const endItem = Math.min(currentPage * pageSize, data.length)
   const currentData = data.slice(startItem, endItem)
   const sortedCurrentData = sortData(currentData, sortConfig)
+
+  // Rendering main component
   return (
     <div>
       <Table
@@ -62,7 +93,7 @@ export default function Index() {
         handleSort={handleSort}
         handleEditSave={handleEditSave}
       />
-      {pageSize < inventoryData.length && (
+      {pageSize < data.length && (
         <Paginate
           currentPage={currentPage}
           totalPages={totalPages}
@@ -72,7 +103,6 @@ export default function Index() {
     </div>
   )
 }
-
 const Table = ({ columnHeaders, sortedData, handleSort, handleEditSave }) => (
   <table className="min-w-full">
     <thead className="bg-zinc-800 text-left">
