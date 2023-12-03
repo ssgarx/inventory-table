@@ -1,50 +1,48 @@
-import React, { useState } from "react" // React core imports
-import { inventoryData } from "../data/inventory" // Custom data imports
-import Image from "next/image" // Next.js Image component
+// React and State Management
+import React, { useState } from "react"
+
+// Custom Components and Data
 import Paginate from "../components/paginate"
-import { filterColumnHeaders, getPaddingClass, sortData } from "../utils"
 import HeadlessTooltip from "../components/headlessTooltip"
+import { inventoryData } from "../data/inventory"
 
-const pageSize = 10 // Constant for pagination size
+// Utilities and Styles
+import { filterColumnHeaders, getPaddingClass, sortData } from "../utils"
+import Image from "next/image"
 
-// Index: Main component for rendering table, handling pagination and sorting
-const Index = () => {
+const pageSize = 10
+
+export default function Index() {
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" })
 
   const columnHeaders = filterColumnHeaders(inventoryData)
   const totalPages = Math.ceil(inventoryData.length / pageSize)
 
-  // Handle page change and reset sorting
   const handlePageChange = (page) => {
     setCurrentPage(page)
     setSortConfig({ key: null, direction: "asc" })
   }
 
-  // Handle sorting by column
   const handleSort = (key) => {
     const direction =
       sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc"
     setSortConfig({ key, direction })
   }
 
-  // Calculate the current data slice for the table
   const startItem = (currentPage - 1) * pageSize
   const endItem = Math.min(currentPage * pageSize, inventoryData.length)
   const currentData = inventoryData.slice(startItem, endItem)
   const sortedCurrentData = sortData(currentData, sortConfig)
 
-  // Main table rendering
   return (
     <div>
-      {/* Table for inventory data */}
       <Table
         columnHeaders={columnHeaders}
         sortedData={sortedCurrentData}
         handleSort={handleSort}
       />
-      {/* Pagination controls */}
-      {pageSize < totalPages && (
+      {pageSize < inventoryData.length && (
         <Paginate
           currentPage={currentPage}
           totalPages={totalPages}
@@ -55,7 +53,6 @@ const Index = () => {
   )
 }
 
-// Table component for displaying inventory data
 const Table = ({ columnHeaders, sortedData, handleSort }) => (
   <table className="min-w-full">
     <thead className="bg-zinc-800 text-left">
@@ -73,17 +70,12 @@ const Table = ({ columnHeaders, sortedData, handleSort }) => (
     </thead>
     <tbody>
       {sortedData.map((item) => (
-        <ItemRow
-          key={item.id} // Unique key based on item id and current page
-          item={item}
-          columnHeaders={columnHeaders}
-        />
+        <ItemRow key={item.id} item={item} columnHeaders={columnHeaders} />
       ))}
     </tbody>
   </table>
 )
 
-// ItemRow component for rendering each row of the table
 const ItemRow = ({ item, level = 0, columnHeaders }) => {
   const [showPrimaryVariants, setShowPrimaryVariants] = useState(false)
 
@@ -125,7 +117,6 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
           </td>
         ))}
       </tr>
-      {/* Conditionally rendered rows for primary variants */}
       {showPrimaryVariants &&
         item.primary_variants &&
         item.primary_variants.map((primaryVariant, index) => (
@@ -140,7 +131,6 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
   )
 }
 
-// Component for rendering rows with secondary variants
 const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
   const [showSecondaryVariants, setShowSecondaryVariants] = useState(false)
   const adjustedItem = { ...item, title: item.name }
@@ -159,7 +149,6 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
           </td>
         ))}
       </tr>
-      {/* Conditionally rendered rows for secondary variants */}
       {showSecondaryVariants &&
         item.secondary_variants &&
         item.secondary_variants.map((secondaryVariant, index) => (
@@ -173,5 +162,3 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
     </>
   )
 }
-
-export default Index
