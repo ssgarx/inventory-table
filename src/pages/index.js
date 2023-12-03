@@ -4,17 +4,18 @@ import React, { useState, useEffect } from "react"
 // Custom Components and Data
 import Paginate from "../components/paginate"
 import HeadlessTooltip from "../components/headlessTooltip"
-import { inventoryData } from "../data/inventory"
-
+import ThemeSwitch from "../components/features/themeSwitch"
 // Utilities and Styles
 import {
   filterColumnHeaders,
   getPaddingClass,
   isNullOrEmpty,
+  joinClassNames,
   sortData,
 } from "../utils"
 import Image from "next/image"
 import { fetchInventoryData } from "../network.js"
+import Svg from "../components/svg"
 
 const pageSize = 10
 
@@ -86,12 +87,22 @@ export default function Index() {
 
   // Rendering main component
   return (
-    <div>
+    <div className="m-8 border p-4 rounded-md space-y-8">
+      <div className="flex justify-between items-center">
+        <div>
+          <p className="text-3xl font-semibold text-primary">
+            Andisor Inventory
+          </p>
+          <p className="text-secondary font-medium">{`${data.length} Products Present`}</p>
+        </div>
+        <ThemeSwitch />
+      </div>
       <Table
         columnHeaders={columnHeaders}
         sortedData={sortedCurrentData}
         handleSort={handleSort}
         handleEditSave={handleEditSave}
+        sortConfig={sortConfig}
       />
       {pageSize < data.length && (
         <Paginate
@@ -103,19 +114,46 @@ export default function Index() {
     </div>
   )
 }
-const Table = ({ columnHeaders, sortedData, handleSort, handleEditSave }) => (
+const Table = ({
+  columnHeaders,
+  sortedData,
+  handleSort,
+  handleEditSave,
+  sortConfig,
+}) => (
   <table className="min-w-full">
-    <thead className="bg-zinc-800 text-left">
+    <thead className="bg-muted text-left ">
       <tr>
-        {columnHeaders.map((header, index) => (
-          <th
-            key={index}
-            className="px-4 py-2"
-            onClick={() => handleSort(header)}
-          >
-            {header}
-          </th>
-        ))}
+        {columnHeaders.map((header, index) => {
+          const isSorted = sortConfig.key === header
+          let sortIcon = null
+          if (isSorted) {
+            sortIcon =
+              sortConfig.direction === "asc" ? "checvron-up" : "checvron-down"
+          }
+
+          return (
+            <th
+              key={index}
+              className={joinClassNames(
+                index === 0 ? "pl-[20px]" : "",
+                " py-2 text-primary capitalize font-medium cursor-pointer"
+              )}
+              onClick={() => handleSort(header)}
+            >
+              <div className="flex justify-start items-center gap-2">
+                <div>{header}</div>
+                {sortIcon && (
+                  <Svg
+                    strokeWidth={2}
+                    className={"w-4 text-secondary"}
+                    name={sortIcon}
+                  />
+                )}
+              </div>
+            </th>
+          )
+        })}
       </tr>
     </thead>
     <tbody>
@@ -140,9 +178,14 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
         {columnHeaders.map((header, index) => (
           <td
             key={header}
-            className={`p-4 py-2 border-b ${
-              index === 0 ? getPaddingClass(level) : ""
-            } ${
+            style={
+              index === 0
+                ? {
+                    paddingLeft: (level + 1) * 20,
+                  }
+                : null
+            }
+            className={`pr-4 py-2 border-b ${
               header === "active"
                 ? item[header]
                   ? " opacity-100"
@@ -151,7 +194,7 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
             }`}
           >
             {header === "title" ? (
-              <>
+              <div className="flex justify-start items-center gap-2 ">
                 <CellContent
                   content={item[header]}
                   handleEditSave={handleEditSave}
@@ -160,10 +203,15 @@ const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
                 />
                 {item.description && (
                   <HeadlessTooltip content={item.description} id="my-tooltip">
-                    <a>TT</a>
+                    <a>
+                      <Svg
+                        className={"w-4 mt-1 text-secondary cursor-help"}
+                        name="info"
+                      />
+                    </a>
                   </HeadlessTooltip>
                 )}
-              </>
+              </div>
             ) : header === "image" && item[header] ? (
               <CellContent
                 content={item[header]}
@@ -234,9 +282,14 @@ const ItemRowWithSecondary = ({
         {columnHeaders.map((header, index) => (
           <td
             key={header}
-            className={`px-4 py-2 border-b ${
-              index === 0 ? getPaddingClass(level) : ""
-            }`}
+            className={`pr-4 py-2 border-b `}
+            style={
+              index === 0
+                ? {
+                    paddingLeft: (level + 1) * 20,
+                  }
+                : null
+            }
           >
             <CellContent
               content={adjustedItem[header]}
@@ -291,13 +344,13 @@ const CellContent = ({
   }
 
   return (
-    <div className="relative group">
+    <div className="relative group text-primary">
       {!isEditing && (
         <span
-          className="absolute -top-0 -left-2 cursor-pointer hidden group-hover:block"
+          className="absolute -top-0 -left-4 cursor-pointer hidden group-hover:block  "
           onClick={handleEditClick}
         >
-          e
+          <Svg className={"w-4"} name="pencil" />
         </span>
       )}
       {isEditing ? (

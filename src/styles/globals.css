@@ -2,26 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+@layer base {
+  * {
+    @apply border-border break-words;
   }
-}
+  body {
+    @apply bg-background text-foreground;
+  }
+  :root {
+    --background: theme(colors.white);
+    --foreground: theme(colors.zinc.800);
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+    --muted: theme(colors.zinc.100);
+    --muted-foreground: theme(colors.zinc.600);
+
+    --primary: theme(colors.zinc.900);
+    --primary-foreground: theme(colors.slate.100);
+
+    --secondary: theme(colors.zinc.600);
+    --secondary-foreground: theme(colors.zinc.200);
+
+    --accent: theme(colors.blue.600);
+    --accent-foreground: theme(colors.zinc.100);
+
+    --border: theme(colors.zinc.200);
+    --input: theme(colors.zinc.200);
+  }
+  .dark {
+    --background: theme(colors.zinc.950);
+    --foreground: theme(colors.zinc.200);
+
+    --muted: theme(colors.zinc.900);
+    --muted-foreground: theme(colors.zinc.400);
+
+    --primary: theme(colors.slate.100);
+    --primary-foreground: theme(colors.zinc.900);
+
+    --secondary: theme(colors.zinc.500);
+    --secondary-foreground: theme(colors.zinc.900);
+
+    --accent: theme(colors.blue.600);
+    --accent-foreground: theme(colors.zinc.100);
+
+    --border: theme(colors.zinc.800);
+    --input: theme(colors.zinc.800);
+
+    --radius: 0.5rem;
+  }
 }

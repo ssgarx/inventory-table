@@ -6,7 +6,7 @@ const getPaddingClass = (level) => {
     case 1:
       return "pl-10"
     case 2:
-      return "pl-20"
+      return "pl-16"
     // Add more cases as needed
     default:
       return "pl-5"
@@ -56,4 +56,11 @@ export function isEmpty(obj) {
     return obj.length == 0
   }
   return obj !== null && typeof obj === "object" && Object.keys(obj).length == 0
+}
+
+export function joinClassNames(...classes) {
+  const classList = classes.map((className) =>
+    className ? className.trim() : ""
+  )
+  return classList.join(" ")
 }
