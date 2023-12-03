@@ -1,5 +1,5 @@
 // React and State Management
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 
 // Custom Components and Data
 import Paginate from "../components/paginate"
@@ -13,11 +13,17 @@ import Image from "next/image"
 const pageSize = 10
 
 export default function Index() {
+  const [data, setData] = useState([])
+
   const [currentPage, setCurrentPage] = useState(1)
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" })
 
-  const columnHeaders = filterColumnHeaders(inventoryData)
-  const totalPages = Math.ceil(inventoryData.length / pageSize)
+  useEffect(() => {
+    // Load data from session storage or use default data
+    const initialData =
+      JSON.parse(sessionStorage.getItem("editedData")) || inventoryData
+    setData(initialData)
+  }, [])
 
   const handlePageChange = (page) => {
     setCurrentPage(page)
@@ -30,17 +36,32 @@ export default function Index() {
     setSortConfig({ key, direction })
   }
 
-  const startItem = (currentPage - 1) * pageSize
-  const endItem = Math.min(currentPage * pageSize, inventoryData.length)
-  const currentData = inventoryData.slice(startItem, endItem)
-  const sortedCurrentData = sortData(currentData, sortConfig)
+  const handleEditSave = (editedItem) => {
+    // Update the data with the edited item
+    const updatedData = data.map((item) =>
+      item.id === editedItem.id ? editedItem : item
+    )
 
+    // Update state and session storage
+    setData(updatedData)
+    sessionStorage.setItem("editedData", JSON.stringify(updatedData))
+
+  }
+
+  // Update references to inventoryData with data
+  const columnHeaders = filterColumnHeaders(data)
+  const totalPages = Math.ceil(data.length / pageSize)
+  const startItem = (currentPage - 1) * pageSize
+  const endItem = Math.min(currentPage * pageSize, data.length)
+  const currentData = data.slice(startItem, endItem)
+  const sortedCurrentData = sortData(currentData, sortConfig)
   return (
     <div>
       <Table
         columnHeaders={columnHeaders}
         sortedData={sortedCurrentData}
         handleSort={handleSort}
+        handleEditSave={handleEditSave}
       />
       {pageSize < inventoryData.length && (
         <Paginate
@@ -53,7 +74,7 @@ export default function Index() {
   )
 }
 
-const Table = ({ columnHeaders, sortedData, handleSort }) => (
+const Table = ({ columnHeaders, sortedData, handleSort, handleEditSave }) => (
   <table className="min-w-full">
     <thead className="bg-zinc-800 text-left">
       <tr>
@@ -70,15 +91,18 @@ const Table = ({ columnHeaders, sortedData, handleSort }) => (
     </thead>
     <tbody>
       {sortedData.map((item) => (
-        <ItemRow key={item.id} item={item} columnHeaders={columnHeaders} />
+        <ItemRow
+          key={item.id}
+          item={item}
+          columnHeaders={columnHeaders}
+          handleEditSave={handleEditSave}
+        />
       ))}
     </tbody>
   </table>
 )
 
-const ItemRow = ({ item, level = 0, columnHeaders }) => {
-  console.log('item', item)
-  console.log('columnHeaders', columnHeaders)
+const ItemRow = ({ item, level = 0, columnHeaders, handleEditSave }) => {
   const [showPrimaryVariants, setShowPrimaryVariants] = useState(false)
 
   return (
@@ -99,7 +123,12 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
           >
             {header === "title" ? (
               <>
-                <InfoDisplay content={item[header]} />
+                <InfoDisplay
+                  content={item[header]}
+                  handleEditSave={handleEditSave}
+                  dataItem={item}
+                  dataItemKey={header}
+                />
                 {item.description && (
                   <HeadlessTooltip content={item.description} id="my-tooltip">
                     <a>TT</a>
@@ -107,9 +136,20 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
                 )}
               </>
             ) : header === "image" && item[header] ? (
-              <InfoDisplay content={item[header]} isImage />
+              <InfoDisplay
+                content={item[header]}
+                isImage
+                handleEditSave={handleEditSave}
+                dataItem={item}
+                dataItemKey={header}
+              />
             ) : (
-              <InfoDisplay content={item[header]} />
+              <InfoDisplay
+                content={item[header]}
+                handleEditSave={handleEditSave}
+                dataItem={item}
+                dataItemKey={header}
+              />
             )}
           </td>
         ))}
@@ -122,15 +162,42 @@ const ItemRow = ({ item, level = 0, columnHeaders }) => {
             item={primaryVariant}
             level={level + 1}
             columnHeaders={columnHeaders}
+            dataItem={item}
+            dataItemKey={index}
+            handleEditSave={handleEditSave}
           />
         ))}
     </>
   )
 }
 
-const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
+const ItemRowWithSecondary = ({
+  item,
+  level,
+  columnHeaders,
+  dataItem,
+  dataItemKey,
+  handleEditSave,
+}) => {
   const [showSecondaryVariants, setShowSecondaryVariants] = useState(false)
   const adjustedItem = { ...item, title: item.name }
+
+  const handlePrimaryVarientEdit = (editedItem) => {
+    const editedData = { ...dataItem }
+    editedData.primary_variants[dataItemKey] = {
+      ...editedItem,
+      name: editedItem.title,
+    }
+    handleEditSave(editedData)
+  }
+  const handleSecondaryVarientEdit = (x, index) => {
+    const editedData = { ...dataItem }
+    editedData.primary_variants[dataItemKey].secondary_variants[index] = {
+      ...x,
+      name: x.title,
+    }
+    handleEditSave(editedData)
+  }
 
   return (
     <>
@@ -142,7 +209,12 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
               index === 0 ? getPaddingClass(level) : ""
             }`}
           >
-            <InfoDisplay content={adjustedItem[header]} />
+            <InfoDisplay
+              content={adjustedItem[header]}
+              dataItem={adjustedItem}
+              dataItemKey={header}
+              handleEditSave={handlePrimaryVarientEdit}
+            />
           </td>
         ))}
       </tr>
@@ -154,6 +226,11 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
             item={{ ...secondaryVariant, title: secondaryVariant.name }}
             level={level + 1}
             columnHeaders={columnHeaders}
+            dataItem={item}
+            dataItemKey={index}
+            handleEditSave={(editedObj) =>
+              handleSecondaryVarientEdit(editedObj, index)
+            }
           />
         ))}
     </>
@@ -161,7 +238,14 @@ const ItemRowWithSecondary = ({ item, level, columnHeaders }) => {
 }
 
 // InfoDisplay Component
-const InfoDisplay = ({ content, isImage }) => {
+const InfoDisplay = ({
+  content,
+  isImage,
+  handleEditSave,
+  dataItem,
+  dataItemKey,
+  type,
+}) => {
   const [isEditing, setIsEditing] = useState(false)
   const [inputValue, setInputValue] = useState(content)
 
@@ -173,6 +257,9 @@ const InfoDisplay = ({ content, isImage }) => {
     // Handle the save logic here
     // For now, it just turns off the editing mode
     setIsEditing(false)
+    const editedItem = { ...dataItem }
+    editedItem[dataItemKey] = inputValue
+    handleEditSave(editedItem)
   }
 
   return (
@@ -188,7 +275,7 @@ const InfoDisplay = ({ content, isImage }) => {
       {isEditing ? (
         <div>
           <input
-            type="text"
+            type={typeof inputValue === "string" ? "text" : "number"}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             className="bg-zinc-600 px-2 py-1"
